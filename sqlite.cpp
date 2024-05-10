@@ -18,6 +18,11 @@ enum PrepareResult {
     PREPARE_FAILURE
 };
 
+enum ExecuteResult {
+    EXECUTE_SUCCESS,
+    EXECUTE_FAILURE
+};
+
 struct Row {
     int id;
     std::string username;
@@ -26,26 +31,33 @@ struct Row {
 
 struct Statement {
     StatementType type;
-    struct Row row;
+    Row row;
 };
 
 struct Page {
     int numRows;
-    struct Row *rows[PAGE_MAX_ROWS];
+    Row *rows[PAGE_MAX_ROWS];
+    Page() {
+        numRows = 0;
+        for (int i = 0; i < PAGE_MAX_ROWS; i++) {
+            rows[i] = nullptr;
+        }
+    }
 };
 
 struct Table {
     int numPages;
-    struct Page *pages[TABLE_MAX_PAGES];
+    Page *pages[TABLE_MAX_PAGES];
+    Table(){
+        numPages = 0;
+        for (int i = 0; i < TABLE_MAX_PAGES; i++){
+            pages[i] = nullptr;
+        }
+    }
 };
 
-struct Table *allocateTable() {
-    struct Table *table = new Table;
-    table->numPages = 0;
-    return table;
-};
 
-void freeTable(struct Table *table){
+void freeTable(Table *table){
     for (int i = 0; i < table->numPages; i++){
         delete table->pages[i];
     }
@@ -63,7 +75,7 @@ std::vector<std::string> splitString(const std::string str, char delimiter) {
     return tokens;
 }
 
-PrepareResult prepareStatement(std::string input, struct Statement *statement){
+PrepareResult prepareStatement(std::string input, Statement *statement){
     if (input.substr(0,6) == "select"){
         statement->type = SELECT;
         std::vector<std::string> attributes = splitString(input, ' ');
@@ -75,7 +87,7 @@ PrepareResult prepareStatement(std::string input, struct Statement *statement){
         statement->row.email = attributes[3];
         return PREPARE_SUCCESS;
     }
-    else if (input.substr() == "insert"){
+    else if (input.substr(0,6) == "insert"){
         statement->type = INSERT;
         std::vector<std::string> attributes = splitString(input, ' ');
         if (attributes.size() != 4) {
@@ -92,7 +104,26 @@ PrepareResult prepareStatement(std::string input, struct Statement *statement){
     }
 }
 
-void executeStatement(std::string input, struct Statement *statement){
+int insertStatement(Statement *statement, Table *table) {
+    int numPages = table->numPages;
+    Page *page = table->pages[numPages];
+
+    if (page == NULL || page->numRows == 100){
+        page = new Page();
+        table->pages[numPages] = page;
+        table->numPages++;
+    }
+
+    page->rows[page->numRows] = new Row;
+    page->rows[page->numRows]->id = statement->row.id;
+    page->rows[page->numRows]->username = statement->row.username;
+    page->rows[page->numRows]->email = statement->row.email;
+    page->numRows++;
+    return 1;
+}
+
+
+void executeStatement(Statement *statement, Table *table){
     switch(statement->type) {
         case SELECT:
                 std::cout << "ID: " <<  statement->row.id << std::endl;
@@ -100,9 +131,22 @@ void executeStatement(std::string input, struct Statement *statement){
                 std::cout << "email: " << statement->row.email << std::endl;
                 break;
         case INSERT:
-                std::cout << "ID: " << statement->row.id << std::endl;
-                std::cout << "username: " << statement->row.username << std::endl;
-                std::cout << "email: " << statement->row.email << std::endl;
+                if(insertStatement(statement, table) == 1){
+                    std::cout << "insert success" << std::endl;
+                    Page *insertedPage = table->pages[table->numPages - 1]; 
+                    std::cout << "Got page" << std::endl;
+
+                    std::cout << "Page numRow to check: " << insertedPage->numRows - 1 << std::endl;
+                    Row *insertedRow = insertedPage->rows[insertedPage->numRows - 1];
+                    std::cout << "Got row" << std::endl;
+
+                    std::cout << "ID: " << insertedRow->id << std::endl;
+                    std::cout << "username: " << insertedRow->username << std::endl;
+                    std::cout << "email: " << insertedRow->email << std::endl;
+                }
+                else {
+                    std::cout << "insert failed" << std::endl;
+                }
                 break;
     }
 }
@@ -123,7 +167,7 @@ int main(){
     std::cout << "Connected to a transient in-memory database." << std::endl;
     std::cout << "Use \".open FILENAME\" to reopen on a persistent database." << std::endl;
 
-    struct Table *table = allocateTable();
+    Table *table = new Table();
 
     std::string input;
     while(true) {
@@ -133,12 +177,13 @@ int main(){
             doMetaCommand(input);
         }
 
-        struct Statement statement;
+        Statement statement;
         if (prepareStatement(input, &statement) == PREPARE_FAILURE){
+            std::cout << "Prepare Failure" << std::endl;
             continue;
         }
 
-        executeStatement(input, &statement);
+        executeStatement(&statement, table);
 
         std::cout << "Executed" << std::endl;
     }
