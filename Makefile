@@ -8,7 +8,7 @@ HEADERS =
 MAIN = sqlite
 
 all: ${MAIN}
-	@echo   Simple compilter named sqlite has been compiled
+	@echo   Simple database named sqlite has been compiled
 
 ${MAIN}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${OBJS} -o ${MAIN}
