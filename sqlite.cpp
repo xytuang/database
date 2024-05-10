@@ -59,6 +59,10 @@ struct Table {
 
 void freeTable(Table *table){
     for (int i = 0; i < table->numPages; i++){
+        Page *page = table->pages[i];
+        for (int j = 0; j < page->numRows; j++) {
+            delete page->rows[j];
+        }
         delete table->pages[i];
     }
     delete table;
