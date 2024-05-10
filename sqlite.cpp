@@ -106,12 +106,19 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
 
 int insertStatement(Statement *statement, Table *table) {
     int numPages = table->numPages;
-    Page *page = table->pages[numPages];
-
-    if (page == NULL || page->numRows == 100){
+    Page *page;
+    if (numPages == 0) { 
         page = new Page();
         table->pages[numPages] = page;
         table->numPages++;
+    }
+    else {
+        page = table->pages[numPages - 1];
+        if (page->numRows == 100) { 
+            page = new Page();
+            table->pages[numPages] = page;
+            table->numPages++;
+        }
     }
 
     page->rows[page->numRows] = new Row;
@@ -123,22 +130,24 @@ int insertStatement(Statement *statement, Table *table) {
 }
 
 
-void executeStatement(Statement *statement, Table *table){
+ExecuteResult executeStatement(Statement *statement, Table *table){
     switch(statement->type) {
         case SELECT:
                 std::cout << "ID: " <<  statement->row.id << std::endl;
                 std::cout << "username: " <<  statement->row.username << std::endl;
                 std::cout << "email: " << statement->row.email << std::endl;
-                break;
+                return EXECUTE_SUCCESS;
         case INSERT:
                 if(insertStatement(statement, table) == 1){
-                    std::cout << "insert success" << std::endl;
-                    Page *insertedPage = table->pages[table->numPages - 1]; 
-                    std::cout << "Got page" << std::endl;
+                    std::cout << "Insert Success" << std::endl;
 
-                    std::cout << "Page numRow to check: " << insertedPage->numRows - 1 << std::endl;
+                    //std::cout << "Number of pages: " << table->numPages << std::endl;
+
+                    Page *insertedPage = table->pages[table->numPages - 1]; 
+
+                    //std::cout << "Latest row: " << insertedPage->numRows - 1 << std::endl;
+
                     Row *insertedRow = insertedPage->rows[insertedPage->numRows - 1];
-                    std::cout << "Got row" << std::endl;
 
                     std::cout << "ID: " << insertedRow->id << std::endl;
                     std::cout << "username: " << insertedRow->username << std::endl;
@@ -147,7 +156,10 @@ void executeStatement(Statement *statement, Table *table){
                 else {
                     std::cout << "insert failed" << std::endl;
                 }
-                break;
+                return EXECUTE_SUCCESS;
+        default:
+                std::cout << "Execute fail" << std::endl;
+                return EXECUTE_FAILURE;
     }
 }
 
@@ -166,6 +178,7 @@ int main(){
     std::cout << "Enter \".help\" for usage hints." << std::endl;
     std::cout << "Connected to a transient in-memory database." << std::endl;
     std::cout << "Use \".open FILENAME\" to reopen on a persistent database." << std::endl;
+    std::cout << std::endl;
 
     Table *table = new Table();
 
