@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++0x -Wall -pedantic-errors -g
 
-SRCS =  sqlite.cpp
+SRCS = sqlite.cpp
 OBJS = ${SRCS:.cpp=.o}
 HEADERS = 
 

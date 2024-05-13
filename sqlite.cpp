@@ -4,58 +4,8 @@
 #include <vector>
 #include <sstream>
 
-
-#define TABLE_MAX_PAGES 100
-#define PAGE_MAX_ROWS 100
-
-enum StatementType {
-    SELECT,
-    INSERT
-};
-
-enum PrepareResult {
-    PREPARE_SUCCESS,
-    PREPARE_FAILURE
-};
-
-enum ExecuteResult {
-    EXECUTE_SUCCESS,
-    EXECUTE_FAILURE
-};
-
-struct Row {
-    int id;
-    std::string username;
-    std::string email;
-};
-
-struct Statement {
-    StatementType type;
-    Row row;
-};
-
-struct Page {
-    int numRows;
-    Row *rows[PAGE_MAX_ROWS];
-    Page() {
-        numRows = 0;
-        for (int i = 0; i < PAGE_MAX_ROWS; i++) {
-            rows[i] = nullptr;
-        }
-    }
-};
-
-struct Table {
-    int numPages;
-    Page *pages[TABLE_MAX_PAGES];
-    Table(){
-        numPages = 0;
-        for (int i = 0; i < TABLE_MAX_PAGES; i++){
-            pages[i] = nullptr;
-        }
-    }
-};
-
+#include "enums.h"
+#include "structs.h"
 
 void freeTable(Table *table){
     for (int i = 0; i < table->numPages; i++){
@@ -80,15 +30,8 @@ std::vector<std::string> splitString(const std::string str, char delimiter) {
 }
 
 PrepareResult prepareStatement(std::string input, Statement *statement){
-    if (input.substr(0,6) == "select"){
+    if (input == "select"){
         statement->type = SELECT;
-        std::vector<std::string> attributes = splitString(input, ' ');
-        if (attributes.size() != 4) {
-            return PREPARE_FAILURE;
-        }
-        statement->row.id = std::stoi(attributes[1]);
-        statement->row.username = attributes[2];
-        statement->row.email = attributes[3];
         return PREPARE_SUCCESS;
     }
     else if (input.substr(0,6) == "insert"){
@@ -108,7 +51,20 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
     }
 }
 
-int insertStatement(Statement *statement, Table *table) {
+int executeSelectStatement(Table *table) {
+    for (int i = 0; i < table->numPages; i++){
+        Page *page = table->pages[i];
+        for (int j = 0; j < page->numRows; j++) {
+            Row *row = page->rows[j];
+            std::cout << "ID: " << row->id << " ";
+            std::cout << "username: " << row->username << " ";
+            std::cout << "email: " << row->email << std::endl;
+        }
+    }
+    return 1;
+}
+
+int executeInsertStatement(Statement *statement, Table *table) {
     int numPages = table->numPages;
     Page *page;
     if (numPages == 0) { 
@@ -118,7 +74,10 @@ int insertStatement(Statement *statement, Table *table) {
     }
     else {
         page = table->pages[numPages - 1];
-        if (page->numRows == 100) { 
+        if (page->numRows == 100) {
+            if (table->numPages == TABLE_MAX_PAGES) {
+                return 0;
+            }
             page = new Page();
             table->pages[numPages] = page;
             table->numPages++;
@@ -137,12 +96,14 @@ int insertStatement(Statement *statement, Table *table) {
 ExecuteResult executeStatement(Statement *statement, Table *table){
     switch(statement->type) {
         case SELECT:
-                std::cout << "ID: " <<  statement->row.id << std::endl;
-                std::cout << "username: " <<  statement->row.username << std::endl;
-                std::cout << "email: " << statement->row.email << std::endl;
-                return EXECUTE_SUCCESS;
+                if(executeSelectStatement(table) == 1) {
+                    return EXECUTE_SUCCESS;
+                }
+                else {
+                    return EXECUTE_TABLE_FULL;                    
+                }
         case INSERT:
-                if(insertStatement(statement, table) == 1){
+                if(executeInsertStatement(statement, table) == 1){
                     std::cout << "Insert Success" << std::endl;
 
                     //std::cout << "Number of pages: " << table->numPages << std::endl;
@@ -200,9 +161,17 @@ int main(){
             continue;
         }
 
-        executeStatement(&statement, table);
+        switch(executeStatement(&statement, table)) {
+            case EXECUTE_SUCCESS:
+                std::cout << "Executed" << std::endl;
+                break;
+            case EXECUTE_TABLE_FULL:
+                std::cout << "Table is full!" << std::endl;
+                break;
+            case EXECUTE_FAILURE:
+                std::cout << "Execution failed!" << std::endl;
+        }
 
-        std::cout << "Executed" << std::endl;
     }
     freeTable(table);
 
