@@ -151,6 +151,7 @@ int main(){
     while(true) {
         std::cout << "sqlite> ";
         std::getline(std::cin, input);
+        std::cout << input << std::endl;
         if (input[0] == '.'){
             doMetaCommand(input);
         }

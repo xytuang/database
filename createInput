@@ -8,4 +8,7 @@ for i in {1..10}; do
     random_name=${names[random_index]}
     echo "insert $random_id $random_name $random_name@gmail" >> input.txt
 done
+echo ".exit" >> input.txt
+printf "EOF" >> input.txt
+
 

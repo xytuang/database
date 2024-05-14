@@ -1,4 +1,12 @@
 #!/bin/bash
 ./createInput
-#./sqlite
+input_file="input.txt"
 
+./sqlite <<EOF
+$(while IFS= read -r line; do
+    echo "$line"
+done < "$input_file")
+EOF
+
+echo "All lines sent"
+rm input.txt
