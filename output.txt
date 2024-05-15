@@ -3,14 +3,64 @@ Enter ".help" for usage hints.
 Connected to a transient in-memory database.
 Use ".open FILENAME" to reopen on a persistent database.
 
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
-sqlite> Prepare Failure
+sqlite> Should not print
+Insert Success
+ID: 17755
+username: abraham
+email: abraham@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 21479
+username: ruth
+email: ruth@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 30037
+username: ruth
+email: ruth@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 12945
+username: eve
+email: eve@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 24979
+username: david
+email: david@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 25834
+username: eve
+email: eve@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 12574
+username: adam
+email: adam@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 29653
+username: moses
+email: moses@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 30806
+username: david
+email: david@gmail
+Executed
+sqlite> Should not print
+Insert Success
+ID: 2736
+username: eve
+email: eve@gmail
+Executed
 sqlite> Exiting

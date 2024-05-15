@@ -1,11 +1,16 @@
 #!/bin/bash
-#./createInput
-./createMalformed
+
 input_file="input.txt"
 output_file="output.txt"
 
-#response=$(./sqlite <<< ".exit")
-#echo $response
+rm -f "$output_file" #removes any existing output file so brand new output file is created
+
+commands=("createValid.sh" "createMalformed.sh")
+
+run_command=${commands[0]}
+
+./"$run_command"
+
 
 fifo="sqlite_fifo"
 
@@ -20,9 +25,7 @@ while IFS= read -r line; do
     echo "$line" > "$fifo"
 done < "$input_file"
 
-# Remove the named pipe
+# Remove intermediate files
 rm "$fifo"
 
-
-echo "All lines sent"
 rm "$input_file"
