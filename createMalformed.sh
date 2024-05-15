@@ -2,7 +2,9 @@
 
 names=("adam" "ruth" "hagar" "eve" "solomon" "david" "abraham" "moses")
 
-for i in {1..10}; do
+num_rows=$1
+
+for ((i = 1; i <= num_rows; i++)); do
     random_id=$RANDOM
     random_index=$((RANDOM % 8))
     random_name=${names[random_index]}
