@@ -151,7 +151,6 @@ int main(){
     while(true) {
         std::cout << "sqlite> ";
         std::getline(std::cin, input);
-        std::cout << input << std::endl;
         if (input[0] == '.'){
             doMetaCommand(input);
         }
@@ -161,7 +160,7 @@ int main(){
             std::cout << "Prepare Failure" << std::endl;
             continue;
         }
-
+        std::cout << "Should not print" << std::endl;
         switch(executeStatement(&statement, table)) {
             case EXECUTE_SUCCESS:
                 std::cout << "Executed" << std::endl;

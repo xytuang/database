@@ -1,12 +1,28 @@
 #!/bin/bash
-./createInput
+#./createInput
+./createMalformed
 input_file="input.txt"
+output_file="output.txt"
 
-./sqlite <<EOF
-$(while IFS= read -r line; do
-    echo "$line"
-done < "$input_file")
-EOF
+#response=$(./sqlite <<< ".exit")
+#echo $response
+
+fifo="sqlite_fifo"
+
+# Create a named pipe
+mkfifo "$fifo"
+
+# Start ./sqlite in the background, reading from the named pipe
+./sqlite < "$fifo" >> "$output_file" &
+
+# Read each line from input_file and write it to the named pipe
+while IFS= read -r line; do
+    echo "$line" > "$fifo"
+done < "$input_file"
+
+# Remove the named pipe
+rm "$fifo"
+
 
 echo "All lines sent"
-rm input.txt
+rm "$input_file"
