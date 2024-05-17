@@ -49,6 +49,6 @@ done
 # Remove intermediate files
 rm "$fifo"
 rm sqlite
-rm "$input_file"
+#rm "$input_file"
 
 exit 0
