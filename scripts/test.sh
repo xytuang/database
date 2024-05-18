@@ -1,16 +1,28 @@
-#/bin/bash
+#!/bin/bash
 
 input_file="input.txt"
 output_file="output.txt"
 
+
 exec 3<"$input_file"
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to open file descriptor 3 for reading" >&2
+    exit 1
+fi
+
 exec 4<"$output_file"
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to open file descriptor 4 for reading" >&2
+    exit 1
+fi
 
 num_case=0
 
 valid_test() {
     if [ "$2" != "sqlite> Insert Success" ]; then
-        echo "Not success"
+        echo "FAIL: Not success"
         return
     fi
 
@@ -52,12 +64,11 @@ malformed_test() {
 }
 
 
-for i in range{1..5}; do
+for i in {1..5}; do
     read -u 4 output_line
 done
 
-while true; do
-    
+while true; do    
     read -u 3 input_line
     read -u 4 output_line
 
@@ -73,7 +84,6 @@ while true; do
     echo "**** TEST CASE $num_case ****"
     echo "INPUT_LINE: $input_line"
     if [ "$1" == "0" ]; then #0 indicates that valid input was created
-
         read -u 4 output_id
         read -u 4 output_username
         read -u 4 output_email
@@ -91,11 +101,20 @@ while true; do
         malformed_test "$output_line" 
     fi
     echo "*****************************"
-
 done
+
 exec 3<&-
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to open file descriptor 3 for writing" >&2
+    exit 1
+fi
 exec 4<&-
 
-#rm "$output_file"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to open file descriptor 4 for writing" >&2
+    exit 1
+fi
+rm "$output_file"
 echo "Finished test"
 exit 0

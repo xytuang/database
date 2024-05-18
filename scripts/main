@@ -5,6 +5,7 @@ output_file="output.txt"
 
 cp ../sqlite .
 
+rm -f "$input_file"
 rm -f "$output_file" #removes any existing output file so brand new output file is created
 
 commands=("create_valid.sh" "create_malformed.sh")
@@ -49,6 +50,6 @@ done
 # Remove intermediate files
 rm "$fifo"
 rm sqlite
-#rm "$input_file"
+rm "$input_file"
 
 exit 0
