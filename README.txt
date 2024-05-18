@@ -22,3 +22,10 @@ Fixed bug in test script after 2 days. Turned out to be the shebang line in
 test.sh where it was #/bin/bash instead of #!/bin/bash. Also worked on error
 checking in sqlite.cpp. Limited size of username and email. IDs can now only be
 positive numbers.
+
+18 May 2024:
+Started working on a pager that manages pages. Also started thinking about
+persistence to disk. Felt pretty strange to combine c and c++ in a single file
+(see structs.h)
+
+
