@@ -8,14 +8,12 @@
 #include "structs.h"
 
 void freeTable(Table *table){
-    for (int i = 0; i < table->numPages; i++){
-        Page *page = table->pager->pages[i];
-        for (int j = 0; j < page->numRows; j++) {
-            delete page->rows[j];
-        }
-        delete table->pager->pages[i];
+    Pager *pager = table->pager;
+    for (int i = 0; i < pager->numPages; i++) {
+        delete pager->pages[i]->data;
+        delete pager->pages[i];
     }
-    delete table->pager;
+    delete pager;
     delete table;
 }
 
@@ -62,8 +60,9 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
 }
 
 int executeSelectStatement(Table *table) {
-    for (int i = 0; i < table->numPages; i++){
-        Page *page = table->pager->pages[i];
+    Pager *pager = table->pager;
+    for (int i = 0; i < pager->numPages; i++){
+        Page *page = pager->pages[i];
         for (int j = 0; j < page->numRows; j++) {
             Row *row = page->rows[j];
             std::cout << "ID: " << row->id << " ";
@@ -75,35 +74,39 @@ int executeSelectStatement(Table *table) {
 }
 
 int executeInsertStatement(Statement *statement, Table *table) {
-    int numPages = table->numPages;
+    Pager *pager = table->pager;
+    int numRows = table->numRows;
     Page *page;
-    if (numPages == 0) { 
+    if (numRows == 0) { 
         page = new Page();
-        table->pager->pages[numPages] = page;
-        table->numPages++;
+        pager->pages[0] = page;
+        pager->numPages++;
     }
     else {
-        page = table->pager->pages[numPages - 1];
-        if (page->numRows == 100) {
-            if (table->numPages == TABLE_MAX_PAGES) {
+        page = pager->pages[pager->numPages - 1];
+        if (page->remainingSize < sizeof(statement->row)) {
+            if (pager->numPages == TABLE_MAX_PAGES) {
                 return 0;
             }
             page = new Page();
-            table->pager->pages[numPages] = page;
-            table->numPages++;
+            pager->pages[pager->numPages] = page;
+            pager->numPages++;
         }
     }
-
-    page->rows[page->numRows] = new Row;
+    page->rows.push_back(new Row);
     page->rows[page->numRows]->id = statement->row.id;
     page->rows[page->numRows]->username = statement->row.username;
     page->rows[page->numRows]->email = statement->row.email;
     page->numRows++;
+    //INSERT CODE TO WRITE TO DATA SECTION
+    page->remainingSize -= sizeof(statement->row);
+    table->numRows++;
     return 1;
 }
 
 
 ExecuteResult executeStatement(Statement *statement, Table *table){
+    Pager *pager = table->pager;
     switch(statement->type) {
         case SELECT:
                 if(executeSelectStatement(table) == 1) {
@@ -116,7 +119,7 @@ ExecuteResult executeStatement(Statement *statement, Table *table){
                 if(executeInsertStatement(statement, table) == 1){
                     std::cout << "Insert Success" << std::endl;
 
-                    Page *insertedPage = table->pager->pages[table->numPages - 1]; 
+                    Page *insertedPage = pager->pages[pager->numPages - 1]; 
 
                     Row *insertedRow = insertedPage->rows[insertedPage->numRows - 1];
 

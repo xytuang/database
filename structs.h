@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define TABLE_MAX_PAGES 100
-#define PAGE_MAX_ROWS 100
+#define PAGE_MAX_SIZE 4096
 #define EMAIL_MAX_SIZE 255
 #define USERNAME_MAX_SIZE 32
 
@@ -23,18 +23,20 @@ struct Statement {
 
 struct Page {
     int numRows;
-    Row *rows[PAGE_MAX_ROWS];
+    std::vector<Row *>rows;
+    char *data;
+    int remainingSize;
     Page() {
         numRows = 0;
-        for (int i = 0; i < PAGE_MAX_ROWS; i++) {
-            rows[i] = nullptr;
-        }
+        data = (char *)malloc(PAGE_MAX_SIZE);
+        remainingSize = PAGE_MAX_SIZE;
     }
 };
 
 struct Pager {
-    int file_descriptor;
-    int file_length;
+    int fileDescriptor;
+    int fileLength;
+    int numPages;
     Page *pages[TABLE_MAX_PAGES];
     Pager(const char *filename) {
         int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
@@ -42,23 +44,24 @@ struct Pager {
             std::cout << "Unable to open file" << std::endl;
             exit(1);
         }
-        file_descriptor = fd;
-        file_length = lseek(fd, 0, SEEK_END);
+        fileDescriptor = fd;
+        fileLength = lseek(fd, 0, SEEK_END);
         for (int i = 0; i < TABLE_MAX_PAGES; i++) {
             pages[i] = nullptr;
         }
+        numPages = 0;
     }
 };
 
 struct Table {
-    int numPages;
     Pager *pager;
+    int numRows;
     Table(const char *filename){
-        numPages = 0;
+        numRows = 0;
         pager = new Pager(filename);
     }
     Table(){
-        numPages = 0;
+        numRows = 0;
         pager = new Pager("db.txt");
     }
 };
