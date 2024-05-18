@@ -9,12 +9,13 @@
 
 void freeTable(Table *table){
     for (int i = 0; i < table->numPages; i++){
-        Page *page = table->pages[i];
+        Page *page = table->pager->pages[i];
         for (int j = 0; j < page->numRows; j++) {
             delete page->rows[j];
         }
-        delete table->pages[i];
+        delete table->pager->pages[i];
     }
+    delete table->pager;
     delete table;
 }
 
@@ -62,7 +63,7 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
 
 int executeSelectStatement(Table *table) {
     for (int i = 0; i < table->numPages; i++){
-        Page *page = table->pages[i];
+        Page *page = table->pager->pages[i];
         for (int j = 0; j < page->numRows; j++) {
             Row *row = page->rows[j];
             std::cout << "ID: " << row->id << " ";
@@ -78,17 +79,17 @@ int executeInsertStatement(Statement *statement, Table *table) {
     Page *page;
     if (numPages == 0) { 
         page = new Page();
-        table->pages[numPages] = page;
+        table->pager->pages[numPages] = page;
         table->numPages++;
     }
     else {
-        page = table->pages[numPages - 1];
+        page = table->pager->pages[numPages - 1];
         if (page->numRows == 100) {
             if (table->numPages == TABLE_MAX_PAGES) {
                 return 0;
             }
             page = new Page();
-            table->pages[numPages] = page;
+            table->pager->pages[numPages] = page;
             table->numPages++;
         }
     }
@@ -115,11 +116,7 @@ ExecuteResult executeStatement(Statement *statement, Table *table){
                 if(executeInsertStatement(statement, table) == 1){
                     std::cout << "Insert Success" << std::endl;
 
-                    //std::cout << "Number of pages: " << table->numPages << std::endl;
-
-                    Page *insertedPage = table->pages[table->numPages - 1]; 
-
-                    //std::cout << "Latest row: " << insertedPage->numRows - 1 << std::endl;
+                    Page *insertedPage = table->pager->pages[table->numPages - 1]; 
 
                     Row *insertedRow = insertedPage->rows[insertedPage->numRows - 1];
 

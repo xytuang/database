@@ -1,6 +1,9 @@
-
 #ifndef STRUCTS_H
 #define STRUCTS_H
+
+#include <string>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define TABLE_MAX_PAGES 100
 #define PAGE_MAX_ROWS 100
@@ -29,14 +32,34 @@ struct Page {
     }
 };
 
-struct Table {
-    int numPages;
+struct Pager {
+    int file_descriptor;
+    int file_length;
     Page *pages[TABLE_MAX_PAGES];
-    Table(){
-        numPages = 0;
-        for (int i = 0; i < TABLE_MAX_PAGES; i++){
+    Pager(const char *filename) {
+        int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+        if (fd == -1) {
+            std::cout << "Unable to open file" << std::endl;
+            exit(1);
+        }
+        file_descriptor = fd;
+        file_length = lseek(fd, 0, SEEK_END);
+        for (int i = 0; i < TABLE_MAX_PAGES; i++) {
             pages[i] = nullptr;
         }
+    }
+};
+
+struct Table {
+    int numPages;
+    Pager *pager;
+    Table(const char *filename){
+        numPages = 0;
+        pager = new Pager(filename);
+    }
+    Table(){
+        numPages = 0;
+        pager = new Pager("db.txt");
     }
 };
 
