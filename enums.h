@@ -5,7 +5,10 @@ enum StatementType {
 
 enum PrepareResult {
     PREPARE_SUCCESS,
-    PREPARE_FAILURE
+    PREPARE_ARGUMENT_SIZE_FAIL,
+    PREPARE_NEGATIVE_ID,
+    PREPARE_STRING_TOO_LONG,
+    PREPARE_UNRECOGNIZED_STATEMENT
 };
 
 enum ExecuteResult {

@@ -4,7 +4,8 @@
 
 #define TABLE_MAX_PAGES 100
 #define PAGE_MAX_ROWS 100
-
+#define EMAIL_MAX_SIZE 255
+#define USERNAME_MAX_SIZE 32
 
 struct Row {
     int id;

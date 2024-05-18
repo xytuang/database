@@ -38,16 +38,25 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
         statement->type = INSERT;
         std::vector<std::string> attributes = splitString(input, ' ');
         if (attributes.size() != 4) {
-            return PREPARE_FAILURE;
+            return PREPARE_ARGUMENT_SIZE_FAIL; 
         }
-        statement->row.id = std::stoi(attributes[1]);
+        int id = std::stoi(attributes[1]);
+        if (id < 0){
+            return PREPARE_NEGATIVE_ID;
+        }
+        statement->row.id = id;
+        if (attributes[2].size() > USERNAME_MAX_SIZE){
+            return PREPARE_STRING_TOO_LONG;
+        }
         statement->row.username = attributes[2];
+        if (attributes[3].size() > EMAIL_MAX_SIZE) {
+            return PREPARE_STRING_TOO_LONG;
+        }
         statement->row.email = attributes[3];
         return PREPARE_SUCCESS;
     }
     else {
-        std::cout << "Unknown command: " << input << std::endl;
-        return PREPARE_FAILURE;
+        return PREPARE_UNRECOGNIZED_STATEMENT;
     }
 }
 
@@ -156,9 +165,21 @@ int main(){
         }
 
         Statement statement;
-        if (prepareStatement(input, &statement) == PREPARE_FAILURE){
-            std::cout << "Prepare Failure" << std::endl;
-            continue;
+        switch(prepareStatement(input, &statement)){
+            case PREPARE_SUCCESS:
+                break;
+            case PREPARE_ARGUMENT_SIZE_FAIL:
+                std::cout << "usage: <command> <id> <username> <email>" << std::endl;
+                continue;
+            case PREPARE_NEGATIVE_ID:
+                std::cout << "Must be positive ID" << std::endl;
+                continue;
+            case PREPARE_STRING_TOO_LONG:
+                std::cout << "Username or email too long" << std::endl;
+                continue;
+            case PREPARE_UNRECOGNIZED_STATEMENT:
+                std::cout << "Unknown command given" << std::endl;
+                continue;
         }
         switch(executeStatement(&statement, table)) {
             case EXECUTE_SUCCESS:
