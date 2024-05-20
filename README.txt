@@ -28,4 +28,6 @@ Started working on a pager that manages pages. Also started thinking about
 persistence to disk. Felt pretty strange to combine c and c++ in a single file
 (see structs.h)
 
-
+20 May 2024:
+Decided it was better if I moved my stuff in c to cpp. Still working on
+persistence to disk. Learned about file i/o in cpp.
