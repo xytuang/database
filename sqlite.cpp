@@ -5,15 +5,19 @@
 #include <sstream>
 
 #include "enums.h"
-#include "structs.h"
+#include "statement.h"
+#include "constants.h"
+
+void *rowSlot(Table *table, int rowNum) {
+    int pageNum = rowNum / ROWS_PER_PAGE;
+    void *page = table->pager->getPage(pageNum);
+    int rowOffset = rowNum % ROWS_PER_PAGE;
+    int byteOffset = rowOffset * ROW_SIZE;
+    return page + byteOffset; 
+}
 
 void freeTable(Table *table){
     Pager *pager = table->pager;
-    for (int i = 0; i < pager->numPages; i++) {
-        delete pager->pages[i]->data;
-        delete pager->pages[i];
-    }
-    delete pager;
     delete table;
 }
 
@@ -43,15 +47,17 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
         if (id < 0){
             return PREPARE_NEGATIVE_ID;
         }
-        statement->row.id = id;
+        statement->id = id;
+        
         if (attributes[2].size() > USERNAME_MAX_SIZE){
             return PREPARE_STRING_TOO_LONG;
         }
-        statement->row.username = attributes[2];
+        statement->username = attributes[2];
+        
         if (attributes[3].size() > EMAIL_MAX_SIZE) {
             return PREPARE_STRING_TOO_LONG;
         }
-        statement->row.email = attributes[3];
+        statement->email = attributes[3];
         return PREPARE_SUCCESS;
     }
     else {
@@ -75,32 +81,7 @@ int executeSelectStatement(Table *table) {
 
 int executeInsertStatement(Statement *statement, Table *table) {
     Pager *pager = table->pager;
-    int numRows = table->numRows;
-    Page *page;
-    if (numRows == 0) { 
-        page = new Page();
-        pager->pages[0] = page;
-        pager->numPages++;
-    }
-    else {
-        page = pager->pages[pager->numPages - 1];
-        if (page->remainingSize < sizeof(statement->row)) {
-            if (pager->numPages == TABLE_MAX_PAGES) {
-                return 0;
-            }
-            page = new Page();
-            pager->pages[pager->numPages] = page;
-            pager->numPages++;
-        }
-    }
-    page->rows.push_back(new Row);
-    page->rows[page->numRows]->id = statement->row.id;
-    page->rows[page->numRows]->username = statement->row.username;
-    page->rows[page->numRows]->email = statement->row.email;
-    page->numRows++;
-    //INSERT CODE TO WRITE TO DATA SECTION
-    page->remainingSize -= sizeof(statement->row);
-    table->numRows++;
+
     return 1;
 }
 
@@ -118,19 +99,12 @@ ExecuteResult executeStatement(Statement *statement, Table *table){
         case INSERT:
                 if(executeInsertStatement(statement, table) == 1){
                     std::cout << "Insert Success" << std::endl;
-
-                    Page *insertedPage = pager->pages[pager->numPages - 1]; 
-
-                    Row *insertedRow = insertedPage->rows[insertedPage->numRows - 1];
-
-                    std::cout << "ID: " << insertedRow->id << std::endl;
-                    std::cout << "username: " << insertedRow->username << std::endl;
-                    std::cout << "email: " << insertedRow->email << std::endl;
+                    return EXECUTE_SUCCESS;
                 }
                 else {
-                    std::cout << "insert failed" << std::endl;
+                    std::cout << "Insert Failed" << std::endl;
+                    return EXECUTE_FAILURE;
                 }
-                return EXECUTE_SUCCESS;
         default:
                 std::cout << "Execute fail" << std::endl;
                 return EXECUTE_FAILURE;
