@@ -1,6 +1,8 @@
 #include "pager.h"
 
 class Table {
-    Pager *pager;
-    int numRows;
+    public:
+        Pager *pager;
+        int numRows;
+        Table(std::string filename);
 };

@@ -1,9 +1,9 @@
 CXX = g++
 CXXFLAGS = -std=c++0x -Wall -pedantic-errors -g
 
-SRCS = sqlite.cpp
+SRCS = sqlite.cpp pager.cpp table.cpp
 OBJS = ${SRCS:.cpp=.o}
-HEADERS = 
+DEPS = enums.h structs.h constants.h table.h pager.h 
 
 MAIN = sqlite
 

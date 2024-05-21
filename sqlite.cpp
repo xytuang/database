@@ -5,20 +5,33 @@
 #include <sstream>
 
 #include "enums.h"
-#include "statement.h"
+#include "structs.h"
 #include "constants.h"
+#include "table.h"
+#include "pager.h"
 
-void *rowSlot(Table *table, int rowNum) {
+Row *rowSlot(Table *table, int rowNum) {
     int pageNum = rowNum / ROWS_PER_PAGE;
-    void *page = table->pager->getPage(pageNum);
+    Page *page = table->pager->getPage(pageNum);
+    std::cout << "got page" << std::endl;
     int rowOffset = rowNum % ROWS_PER_PAGE;
-    int byteOffset = rowOffset * ROW_SIZE;
-    return page + byteOffset; 
+    if (page->rows[rowOffset] == nullptr) {
+        page->rows[rowOffset] = new Row();
+    }
+    return page->rows[rowOffset]; 
 }
 
-void freeTable(Table *table){
+void dbClose(Table* table) {
     Pager *pager = table->pager;
-    delete table;
+    int numFullPages = table->numRows / ROWS_PER_PAGE;
+    for (int i = 0; i < numFullPages; i++) {
+        if (pager->pages[i] == nullptr) {
+            continue;
+        }
+        pager->pagerFlush(i, PAGE_MAX_SIZE);
+        delete pager->pages[i];
+        pager->pages[i] = nullptr;
+    }
 }
 
 std::vector<std::string> splitString(const std::string str, char delimiter) {
@@ -65,29 +78,25 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
     }
 }
 
+//INCOMPLETE
 int executeSelectStatement(Table *table) {
-    Pager *pager = table->pager;
-    for (int i = 0; i < pager->numPages; i++){
-        Page *page = pager->pages[i];
-        for (int j = 0; j < page->numRows; j++) {
-            Row *row = page->rows[j];
-            std::cout << "ID: " << row->id << " ";
-            std::cout << "username: " << row->username << " ";
-            std::cout << "email: " << row->email << std::endl;
-        }
-    }
     return 1;
 }
 
-int executeInsertStatement(Statement *statement, Table *table) {
-    Pager *pager = table->pager;
 
+//INCOMPLETE
+int executeInsertStatement(Statement *statement, Table *table) {
+    std::cout << "inside execute insert" << std::endl;
+    Row *row = rowSlot(table, statement->id);
+    std::cout << "got row" << std::endl;
+    row->id = statement->id;
+    row->username = statement->username;
+    row->email = statement->email;
     return 1;
 }
 
 
 ExecuteResult executeStatement(Statement *statement, Table *table){
-    Pager *pager = table->pager;
     switch(statement->type) {
         case SELECT:
                 if(executeSelectStatement(table) == 1) {
@@ -111,9 +120,10 @@ ExecuteResult executeStatement(Statement *statement, Table *table){
     }
 }
 
-void doMetaCommand(std::string input){
+void doMetaCommand(std::string input, Table *table){
     if (input == ".exit"){
         std::cout << "Exiting" << std::endl;
+        dbClose(table);
         exit(0);
     }
     else {
@@ -128,14 +138,15 @@ int main(){
     std::cout << "Use \".open FILENAME\" to reopen on a persistent database." << std::endl;
     std::cout << std::endl;
 
-    Table *table = new Table();
+    Table *table = new Table("mydb.txt");
+    std::cout << "opened table" << std::endl;
 
     std::string input;
     while(true) {
         std::cout << "sqlite> ";
         std::getline(std::cin, input);
         if (input[0] == '.'){
-            doMetaCommand(input);
+            doMetaCommand(input, table);
         }
 
         Statement statement;
@@ -167,7 +178,5 @@ int main(){
         }
 
     }
-    freeTable(table);
-
     return 0;
 }

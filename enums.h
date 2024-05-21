@@ -1,3 +1,6 @@
+#ifndef ENUMS_H
+#define ENUMS_H
+
 enum StatementType {
     SELECT,
     INSERT
@@ -16,3 +19,5 @@ enum ExecuteResult {
     EXECUTE_FAILURE,
     EXECUTE_TABLE_FULL
 };
+
+#endif
