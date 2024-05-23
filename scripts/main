@@ -1,0 +1,55 @@
+#!/bin/bash
+
+input_file="input.txt"
+output_file="output.txt"
+
+cp ../sqlite .
+
+rm -f "$input_file"
+rm -f "$output_file" #removes any existing output file so brand new output file is created
+
+commands=("create_valid.sh" "create_malformed.sh")
+
+printf "Enter type of test case to run\n0 for valid rows\n1 for malformed rows\n"
+
+read command_index
+
+if [[ "$command_index" != "0" && "$command_index" != "1" ]]; then
+    echo "Invalid index. Aborting"
+    exit 1
+fi
+
+run_command=${commands[command_index]} 
+
+echo "Enter number of rows to generate"
+
+read num_rows
+
+./"$run_command" "$num_rows"
+
+
+fifo="sqlite_fifo"
+
+mkfifo "$fifo" # Create a named pipe
+
+./sqlite < "$fifo" >>"$output_file" & # Start ./sqlite in the background, reading from the named pipe
+
+# Read each line from input_file and write it to the named pipe
+while IFS= read -r line; do
+    echo "$line" > "$fifo"
+done < "$input_file"
+
+
+tail -n +6 $output_file | while IFS= read -r line; do
+    echo "$line"
+done
+
+
+./"test.sh" "$command_index" "$num_rows"
+
+# Remove intermediate files
+rm "$fifo"
+rm sqlite
+rm "$input_file"
+
+exit 0
