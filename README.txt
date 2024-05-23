@@ -31,3 +31,7 @@ persistence to disk. Felt pretty strange to combine c and c++ in a single file
 20 May 2024:
 Decided it was better if I moved my stuff in c to cpp. Still working on
 persistence to disk. Learned about file i/o in cpp.
+
+23 May 2024:
+I have decided to migrate everything to c. You can still find the old cpp files
+in the folder called "old".

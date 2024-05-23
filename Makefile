@@ -1,20 +1,16 @@
-CXX = g++
-CXXFLAGS = -std=c++0x -Wall -pedantic-errors -g
+CC = gcc
+CFLAGS = -g -Wall
+LDFLAGS =
 
-SRCS = sqlite.cpp pager.cpp table.cpp
-OBJS = ${SRCS:.cpp=.o}
-DEPS = enums.h structs.h constants.h table.h pager.h 
+LDLIBS =
 
-MAIN = sqlite
+main: main.o
 
-all: ${MAIN}
-	@echo   Simple database named sqlite has been compiled
+main.o: main.c
 
-${MAIN}: ${OBJS}
-	${CXX} ${CXXFLAGS} ${OBJS} -o ${MAIN}
-
-.cpp.o:
-	${CXX} ${CXXFLAGS} -c $< -o $@
-
+.PHONY: clean
 clean:
-	${RM} ${PROGS} ${MAIN} ${OBJS} *.o *~. 
+	rm -f *.o a.out core main
+
+.PHONY: all
+all: clean main
