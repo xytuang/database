@@ -33,5 +33,6 @@ Decided it was better if I moved my stuff in c to cpp. Still working on
 persistence to disk. Learned about file i/o in cpp.
 
 23 May 2024:
-I have decided to migrate everything to c. You can still find the old cpp files
-in the folder called "old".
+I have decided to work on a c version of the project alongside c++ to see the
+differences between each language. The cpp files were thus rewritten. Starting
+over again for persistence to disk.
