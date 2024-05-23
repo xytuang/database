@@ -6,7 +6,7 @@ LDLIBS =
 
 main: main.o
 
-main.o: main.c
+main.o: main.c enums.h structs.h
 
 .PHONY: clean
 clean:
