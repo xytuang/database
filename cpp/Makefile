@@ -1,19 +1,18 @@
 CXX = g++
 CXXFLAGS = -std=c++0x -Wall -pedantic-errors -g
 
-SRCS = sqlite.cpp pager.cpp table.cpp
+SRCS = main.cpp
 OBJS = ${SRCS:.cpp=.o}
-DEPS = enums.h structs.h constants.h table.h pager.h 
+DEPS = constants.h enums.h row.h structs.h table.h 
 
-MAIN = sqlite
+MAIN = main
 
 all: ${MAIN}
-	@echo   Simple database named sqlite has been compiled
 
 ${MAIN}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${OBJS} -o ${MAIN}
 
-.cpp.o:
+.cpp.o: ${DEPS}
 	${CXX} ${CXXFLAGS} -c $< -o $@
 
 clean:

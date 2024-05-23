@@ -1,0 +1,15 @@
+#ifndef ROW_H
+#define ROW_H
+
+#include <string>
+
+const int COLUMN_USERNAME_SIZE = 32;
+const int COLUMN_EMAIL_SIZE = 255;
+
+typedef struct {
+    int id;
+    char username[COLUMN_USERNAME_SIZE];
+    char email[COLUMN_EMAIL_SIZE];
+} Row;
+
+#endif

@@ -1,0 +1,147 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+
+#include "constants.h"
+#include "enums.h"
+#include "structs.h"
+#include "row.h"
+#include "table.h"
+
+std::vector<std::string> splitString(const std::string str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(str);
+    std::string token;
+
+    while(std::getline(iss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void serializeRow(Row* source, void* destination) {
+    std::copy(
+        reinterpret_cast<const char*>(source),
+        reinterpret_cast<const char*>(source) + sizeof(*source),
+        reinterpret_cast<char*>(destination)
+    );
+}
+
+void deserializeRow(void* source, Row* destination) {
+    destination = reinterpret_cast<Row*>(source);
+}
+
+
+PrepareResult prepareStatement(std::string input, Statement* statement) {
+    if (input.substr(0,6) == "insert") {
+        statement->type = STATEMENT_INSERT;
+        std::vector<std::string> argsAssigned = splitString(input, ' ');
+        if (argsAssigned.size() != 4) {
+            return PREPARE_SYNTAX_ERROR;
+        }
+
+        if (argsAssigned[2].size() > COLUMN_USERNAME_SIZE) {
+            return PREPARE_SYNTAX_ERROR;
+        }
+
+        if (argsAssigned[3].size() > COLUMN_EMAIL_SIZE) {
+            return PREPARE_SYNTAX_ERROR;
+        }
+
+        statement->rowToInsert.id = std::stoi(argsAssigned[1]);
+
+        for (int i = 0; i < argsAssigned[2].size(); i++) {
+            statement->rowToInsert.username[i] = argsAssigned[2][i];
+        }
+
+        for (int i = 0; i < argsAssigned[3].size(); i++) {
+            statement->rowToInsert.email[i] = argsAssigned[3][i];
+        }
+
+        return PREPARE_SUCCESS;
+    }
+    if (input.substr(0,6) == "select") {
+        statement->type = STATEMENT_SELECT;
+        return PREPARE_SUCCESS;
+    }
+    return PREPARE_UNRECOGNIZED_STATEMENT;
+}
+
+ExecuteResult executeInsert(Statement* statement, Table* table) {
+    if (table->numRows >= TABLE_MAX_ROWS) {
+        return EXECUTE_TABLE_FULL;
+    }
+    Row* rowToInsert = &(statement->rowToInsert);
+    serializeRow(rowToInsert, rowSlot(table, table->numRows));
+    table->numRows++;
+    return EXECUTE_SUCCESS;
+}
+
+ExecuteResult executeSelect(Statement* statement, Table* table) {
+    Row row;
+    for (int i = 0; i < table->numRows; i++) {
+        deserializeRow(rowSlot(table, i), &row);
+        std::cout << "ID: " << row.id << " USERNAME: " << row.username << " EMAIL: " << row.email << std::endl;
+    }
+    return EXECUTE_SUCCESS;
+}
+
+ExecuteResult executeStatement(Statement* statement, Table* table){
+    switch(statement->type) {
+        case STATEMENT_INSERT:
+            return executeInsert(statement, table);
+        case STATEMENT_SELECT:
+            return executeSelect(statement, table);
+    }
+}
+
+MetaCommandResult doMetaCommand(std::string input) {
+    if (input == ".exit") {
+        exit(EXIT_SUCCESS);
+    }
+    return META_COMMAND_UNRECOGNIZED_COMMAND;
+}
+
+int main(){
+
+    std::string input;
+    Table* table = newTable();
+    while(true) {
+        std::cout << "sqlite> ";
+        std::getline(std::cin, input);
+        if (input[0] == '.'){
+            switch(doMetaCommand(input)) {
+                case META_COMMAND_SUCCESS:
+                    continue;
+                case META_COMMAND_UNRECOGNIZED_COMMAND:
+                    std::cout << "Unrecognized command: " << input << std::endl;
+                    continue; 
+            }
+        }
+
+        Statement statement;
+        switch(prepareStatement(input, &statement)){
+            case PREPARE_SUCCESS:
+                break;
+            case PREPARE_SYNTAX_ERROR:
+                std::cout << "Syntax error Could not parse statement." << std::endl;
+                continue;
+            case PREPARE_UNRECOGNIZED_STATEMENT:
+                std::cout << "Unrecognized keyword at start of " << input << std::endl;
+                continue;
+        }
+        switch(executeStatement(&statement, table)) {
+            case EXECUTE_SUCCESS:
+                std::cout << "Execute success." << std::endl;
+                break;
+            case EXECUTE_TABLE_FULL:
+                std::cout << "Table is full!" << std::endl;
+                break;
+        }
+        std::cout << "Executed." << std::endl;
+
+    }
+    return 0;
+}
