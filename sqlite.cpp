@@ -13,7 +13,6 @@
 Row *rowSlot(Table *table, int rowNum) {
     int pageNum = rowNum / ROWS_PER_PAGE;
     Page *page = table->pager->getPage(pageNum);
-    std::cout << "got page" << std::endl;
     int rowOffset = rowNum % ROWS_PER_PAGE;
     if (page->rows[rowOffset] == nullptr) {
         page->rows[rowOffset] = new Row();
@@ -23,14 +22,19 @@ Row *rowSlot(Table *table, int rowNum) {
 
 void dbClose(Table* table) {
     Pager *pager = table->pager;
-    int numFullPages = table->numRows / ROWS_PER_PAGE;
-    for (int i = 0; i < numFullPages; i++) {
+    for (int i = 0; i < TABLE_MAX_PAGES; i++) {
         if (pager->pages[i] == nullptr) {
             continue;
         }
         pager->pagerFlush(i, PAGE_MAX_SIZE);
         delete pager->pages[i];
         pager->pages[i] = nullptr;
+    }
+    std::cout << "closing file" << std::endl;
+    if (pager->file) {
+        pager->file->close();
+        delete pager->file;
+        pager->file = nullptr;
     }
 }
 
@@ -78,17 +82,13 @@ PrepareResult prepareStatement(std::string input, Statement *statement){
     }
 }
 
-//INCOMPLETE
 int executeSelectStatement(Table *table) {
     return 1;
 }
 
 
-//INCOMPLETE
 int executeInsertStatement(Statement *statement, Table *table) {
-    std::cout << "inside execute insert" << std::endl;
     Row *row = rowSlot(table, statement->id);
-    std::cout << "got row" << std::endl;
     row->id = statement->id;
     row->username = statement->username;
     row->email = statement->email;
@@ -122,8 +122,8 @@ ExecuteResult executeStatement(Statement *statement, Table *table){
 
 void doMetaCommand(std::string input, Table *table){
     if (input == ".exit"){
-        std::cout << "Exiting" << std::endl;
         dbClose(table);
+        std::cout << "Exiting" << std::endl;
         exit(0);
     }
     else {
@@ -139,7 +139,6 @@ int main(){
     std::cout << std::endl;
 
     Table *table = new Table("mydb.txt");
-    std::cout << "opened table" << std::endl;
 
     std::string input;
     while(true) {

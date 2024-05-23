@@ -1,8 +1,10 @@
 #include "pager.h"
 #include <iostream>
+#include "constants.h"
+#include "structs.h"
 
 Pager::Pager(std::string filename) {
-    std::fstream file(filename, std::ios::in | std::ios::out | std::ios::app | std::ios::binary);
+    std::fstream file(filename, std::ios::in | std::ios::out | std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
     }
@@ -28,34 +30,48 @@ Page *Pager::getPage(int pageNum){
         std::cout << "Tried to fetch page number out of bounds." << pageNum << " > " <<  TABLE_MAX_PAGES << std::endl;
         exit(1);
     }
-    std::cout << "inside get page" << std::endl;
     if (this->pages[pageNum] == nullptr) {
-        Page *page = new Page();
-        int numPages = (this->fileLength) / PAGE_MAX_SIZE;
-        if (this->fileLength % PAGE_MAX_SIZE) {
-            numPages++;
-        }
-        if (pageNum <= numPages) {
-            std::cout << "seeking" << std::endl;
-            this->file->seekg(pageNum * PAGE_MAX_SIZE, std::ios::beg);
-            std::cout << "seekg" << std::endl;
-            this->file->read((char *)page->rows, PAGE_MAX_SIZE);
-            std::cout << "read" << std::endl;
-            if (this->file->gcount() != PAGE_MAX_SIZE) { //error suspect
-                std::cerr << "error reading file" << std::endl;
-                exit(1);
-            }
-        }
+        Page *page = new Page(); 
         this->pages[pageNum] = page;
     }
     return this->pages[pageNum];
 }
-//INCOMPLETE?????
+
 void Pager::pagerFlush(int pageNum, int size) {
     if (this->pages[pageNum] == nullptr) {
         std::cerr << "Tried to flush non-existent page" << std::endl;
         exit(1);
     }
-    this->file->seekg(pageNum * PAGE_MAX_SIZE, std::ios::beg);
-    this->file->write((char *)this->pages[pageNum]->rows, size);
+    
+    //std::streampos seekPos = pageNum * PAGE_MAX_SIZE;
+
+    // Check if the stream is in a good state
+    //if (!this->file->good()) {
+    //    std::cerr << "File stream is not in a good state" << std::endl;
+    //    return;
+    //}
+
+
+    //this->file->seekg(seekPos, std::ios::beg);
+    
+    //if (this->file->fail()) {
+    //    std::cerr << "Failed to seek to position: " << seekPos << std::endl;
+    //} else {
+    //    std::cout << "Successfully seeked to position: " << seekPos << std::endl;
+    //}
+
+    for (int i = 0; i < ROWS_PER_PAGE; i++){
+        if (this->pages[pageNum]->rows[i] == nullptr){
+            continue;
+        }
+        Row *row = this->pages[pageNum]->rows[i];
+        std::cout << "id: " << row->id << std::endl; 
+        std::cout << "username: " << row->username << std::endl;
+        std::cout << "email: " << row->email << std::endl;
+        this->file->write(reinterpret_cast<const char*>(&(row->id)), sizeof(row->id));
+        this->file->write(row->username.c_str(), row->username.size());
+        this->file->write(row->email.c_str(), row->email.size());
+        //this->file << row->id << ',' << row->username << ',' << row->id << std::endl;
+        //this->file->write((char *)(this->pages[pageNum]->rows[i]), ROW_MAX_SIZE);
+    }
 }
