@@ -33,34 +33,45 @@ void deserializeRow(void* source, Row* destination) {
     destination = reinterpret_cast<Row*>(source);
 }
 
+PrepareResult prepareInsert(std::string input, Statement* statement) {
+    statement->type = STATEMENT_INSERT;
+    std::vector<std::string> argsAssigned = splitString(input, ' ');
+    if (argsAssigned.size() != 4) {
+        return PREPARE_SYNTAX_ERROR;
+    }
+
+    if (argsAssigned[2].size() > COLUMN_USERNAME_SIZE) {
+        return PREPARE_STRING_TOO_LONG;
+    }
+
+    if (argsAssigned[3].size() > COLUMN_EMAIL_SIZE) {
+        return PREPARE_STRING_TOO_LONG;
+    }
+
+    int id = std::stoi(argsAssigned[1]);
+    
+    if (id < 0) {
+        return PREPARE_NEGATIVE_ID;
+    }
+
+    statement->rowToInsert.id = id;
+
+    for (int i = 0; i < argsAssigned[2].size(); i++) {
+        statement->rowToInsert.username[i] = argsAssigned[2][i];
+    }
+    statement->rowToInsert.username[argsAssigned[2].size()] = '\0';
+
+    for (int i = 0; i < argsAssigned[3].size(); i++) {
+        statement->rowToInsert.email[i] = argsAssigned[3][i];
+    }
+    statement->rowToInsert.email[argsAssigned[3].size()] = '\0';
+
+    return PREPARE_SUCCESS;
+}
 
 PrepareResult prepareStatement(std::string input, Statement* statement) {
     if (input.substr(0,6) == "insert") {
-        statement->type = STATEMENT_INSERT;
-        std::vector<std::string> argsAssigned = splitString(input, ' ');
-        if (argsAssigned.size() != 4) {
-            return PREPARE_SYNTAX_ERROR;
-        }
-
-        if (argsAssigned[2].size() > COLUMN_USERNAME_SIZE) {
-            return PREPARE_SYNTAX_ERROR;
-        }
-
-        if (argsAssigned[3].size() > COLUMN_EMAIL_SIZE) {
-            return PREPARE_SYNTAX_ERROR;
-        }
-
-        statement->rowToInsert.id = std::stoi(argsAssigned[1]);
-
-        for (int i = 0; i < argsAssigned[2].size(); i++) {
-            statement->rowToInsert.username[i] = argsAssigned[2][i];
-        }
-
-        for (int i = 0; i < argsAssigned[3].size(); i++) {
-            statement->rowToInsert.email[i] = argsAssigned[3][i];
-        }
-
-        return PREPARE_SUCCESS;
+        return prepareInsert(input, statement);
     }
     if (input.substr(0,6) == "select") {
         statement->type = STATEMENT_SELECT;
@@ -127,6 +138,12 @@ int main(){
                 break;
             case PREPARE_SYNTAX_ERROR:
                 std::cout << "Syntax error Could not parse statement." << std::endl;
+                continue;    
+            case PREPARE_NEGATIVE_ID:
+                std::cout << "ID must be positive." << std::endl;
+                continue;
+            case PREPARE_STRING_TOO_LONG:
+                std::cout << "String too long." << std::endl;
                 continue;
             case PREPARE_UNRECOGNIZED_STATEMENT:
                 std::cout << "Unrecognized keyword at start of " << input << std::endl;
