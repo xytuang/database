@@ -4,6 +4,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <stdlib.h>
+
 #include "constants.h"
 #include "enums.h"
 #include "structs.h"
@@ -22,15 +24,15 @@ std::vector<std::string> splitString(const std::string str, char delimiter) {
 }
 
 void serializeRow(Row* source, void* destination) {
-    std::copy(
-        reinterpret_cast<const char*>(source),
-        reinterpret_cast<const char*>(source) + sizeof(*source),
-        reinterpret_cast<char*>(destination)
-    );
+    memcpy((int*)destination + ID_OFFSET, &(source->id), ID_SIZE);
+    strncpy((char*)destination + USERNAME_OFFSET, source->username, USERNAME_SIZE);
+    strncpy((char*)destination + EMAIL_OFFSET, source->email, EMAIL_SIZE);
 }
 
 void deserializeRow(void* source, Row* destination) {
-    destination = reinterpret_cast<Row*>(source);
+    memcpy(&(destination->id), (int*)source + ID_OFFSET, ID_SIZE);
+    memcpy(&(destination->username), (char*)source + USERNAME_OFFSET, USERNAME_SIZE);
+    memcpy(&(destination->email), (char*)source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
 PrepareResult prepareInsert(std::string input, Statement* statement) {
@@ -108,22 +110,28 @@ ExecuteResult executeStatement(Statement* statement, Table* table){
     }
 }
 
-MetaCommandResult doMetaCommand(std::string input) {
+MetaCommandResult doMetaCommand(std::string input, Table* table) {
     if (input == ".exit") {
+        dbClose(table);
         exit(EXIT_SUCCESS);
     }
     return META_COMMAND_UNRECOGNIZED_COMMAND;
 }
 
-int main(){
+int main(int argc, char* argv[]){
+    if (argc < 2) {
+        std:: cout << "Usage: ./main <database file>" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    char* filename = argv[1];
+    Table* table = dbOpen(filename);
 
     std::string input;
-    Table* table = newTable();
     while(true) {
         std::cout << "sqlite> ";
         std::getline(std::cin, input);
         if (input[0] == '.'){
-            switch(doMetaCommand(input)) {
+            switch(doMetaCommand(input, table)) {
                 case META_COMMAND_SUCCESS:
                     continue;
                 case META_COMMAND_UNRECOGNIZED_COMMAND:
